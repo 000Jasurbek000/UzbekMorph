@@ -1,0 +1,14 @@
+ts,username,token_index,word,action,strategy,segments,tags,subtypes,codes
+2026-03-06T18:45:58+00:00,annotator1,0,taklif,save,primary,taklif,STEM,,0.0.0
+2026-03-06T18:45:59+00:00,annotator1,10,uchun,save,primary,uchun,STEM,,0.0.0
+2026-03-06T18:46:00+00:00,annotator1,20,qonun,save,primary,qonun,STEM,,0.0.0
+2026-03-06T18:46:02+00:00,annotator1,30,etish,save,primary,etish,STEM,,0.0.0
+2026-03-06T19:01:09+00:00,annotator1,40,qonunchilik,save,primary,qonunchilik,STEM,,0.0.0
+2026-03-06T19:01:11+00:00,annotator1,50,faoliyat,save,primary,faoliyat,STEM,,0.0.0
+2026-03-06T19:01:12+00:00,annotator1,60,o'zbekiston,save,primary,o'zbekiston,STEM,,0.0.0
+2026-03-06T19:01:20+00:00,annotator1,70,ikkinchi,delete,primary,ikkinch|i,STEM|POSSESSIVE,|P3SG,0.0.0|2.2.2
+2026-03-06T19:01:23+00:00,annotator1,80,nazarda,save,primary,nazar|da,STEM|CASE,|LOC,0.0.0|3.3.3
+2026-03-06T19:27:50+00:00,annotator1,0,taklif,update,manual,taklif,STEM,,0.0.0
+2026-03-06T19:27:54+00:00,annotator1,1,havola,save,primary,havola,STEM,,0.0.0
+2026-03-06T19:27:58+00:00,annotator1,2,elementidan,save,primary,element|i|dan,STEM|POSSESSIVE|CASE,|P3SG|ABL,0.0.0|2.2.2|3.3.3
+2026-03-06T19:28:00+00:00,annotator1,3,yuborishaudioni,delete,primary,yuborishaudio|ni,STEM|CASE,|ACC,0.0.0|3.3.3

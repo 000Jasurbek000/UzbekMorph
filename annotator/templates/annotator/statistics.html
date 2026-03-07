@@ -1,0 +1,64 @@
+{% extends 'annotator/base.html' %}
+{% block title %}Statistika{% endblock %}
+{% block content %}
+<h1>📈 Statistika</h1>
+<div class="cards">
+  <div class="card">
+    <strong>📌 Biriktirilgan</strong>
+    <div>{{ assigned_count }}</div>
+  </div>
+  <div class="card">
+    <strong>✅ Tugallangan</strong>
+    <div>{{ completed_count }}</div>
+  </div>
+  <div class="card">
+    <strong>⏳ Qolgan</strong>
+    <div>{{ remaining_count }}</div>
+  </div>
+  <div class="card">
+    <strong>📊 Jami annotatsiyalar</strong>
+    <div>{{ total_annotations }}</div>
+  </div>
+</div>
+
+<div style="margin-top: 35px; padding: 30px; background: white; border: 2px solid #E3F2FD; border-radius: 12px; box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08);">
+  <h3 style="margin: 0 0 22px 0; color: #1890FF; font-size: 1.4em; font-weight: 600;">💾 Natijalarni yuklab olish</h3>
+  <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+    {% if request.user.is_superuser or request.user.role == 'admin' %}
+      <!-- Admin uchun faqat barcha ma'lumotlar -->
+      <a class="btn green" href="/export/admin/all/csv/" style="background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%); color: white;">📄 Hammasi (CSV)</a>
+      <a class="btn green" href="/export/admin/all/jsonl/" style="background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%); color: white;">📄 Hammasi (JSONL)</a>
+    {% else %}
+      <!-- Oddiy foydalanuvchi uchun o'z ma'lumotlari -->
+      <a class="btn" href="/export/me/csv/" style="background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%); color: white;">📄 Mening natijalarim (CSV)</a>
+      <a class="btn secondary" href="/export/me/jsonl/" style="background: #F5F5F5; color: #595959; border: 1px solid #D9D9D9;">📄 Mening natijalarim (JSONL)</a>
+    {% endif %}
+  </div>
+</div>
+
+<h2>📝 So'nggi annotatsiyalar</h2>
+<table>
+  <thead>
+    <tr>
+      <th>So'z</th>
+      <th>Harakat</th>
+      <th>Strategiya</th>
+      <th>Vaqt</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ann in annotations %}
+    <tr>
+      <td><strong>{{ ann.word }}</strong></td>
+      <td><span style="color: #667eea;">{{ ann.action }}</span></td>
+      <td>{{ ann.strategy }}</td>
+      <td>{{ ann.created_at|date:"d.m.Y H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4" style="text-align: center; padding: 40px; color: #999;">Hali annotatsiya amalga oshirilmagan</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'annotator/base.html' %}
+{% block title %}Profil{% endblock %}
+{% block content %}
+<h1>👤 Shaxsiy profil</h1>
+
+{% if messages %}
+<div style="margin-bottom: 28px;">
+    {% for message in messages %}
+    <div style="padding: 16px 22px; border-radius: 8px; margin-bottom: 12px; {% if message.tags == 'success' %}background: #F6FFED; color: #52C41A; border: 1px solid #B7EB8F;{% elif message.tags == 'error' %}background: #FFF1F0; color: #FF4D4F; border: 1px solid #FFCCC7;{% else %}background: #E6F7FF; color: #1890FF; border: 1px solid #91D5FF;{% endif %}">
+        <strong>{{ message }}</strong>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="cards">
+  <div class="card">
+    <strong>👤 Foydalanuvchi</strong>
+    <div>{{ request.user.username }}</div>
+    <div class="muted">{{ request.user.get_role_display }}</div>
+  </div>
+  <div class="card">
+    <strong>📊 Jami annotatsiya</strong>
+    <div>{{ request.user.total_annotations }}</div>
+  </div>
+  <div class="card">
+    <strong>📅 Bugungi annotatsiyalar</strong>
+    <div>{{ request.user.today_annotations }}</div>
+  </div>
+  <div class="card">
+    <strong>✅ Vazifalar</strong>
+    <div>{{ completed_count }} / {{ assigned_count }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 25px; padding: 32px; background: white; border: 2px solid #E3F2FD; box-shadow: 0 2px 8px rgba(24, 144, 255, 0.08);">
+  <strong style="font-size: 1.1em; color: #1890FF;">📁 Aktiv dataset</strong>
+  {% if dataset %}
+  <div style="font-size: 1.4em; margin-top: 14px; color: #1E88E5; font-weight: 600;">{{ dataset.name }}</div>
+  <div class="muted" style="margin-top: 10px;">Rejim: {{ dataset.get_assignment_mode_display }} | Tokenlar: {{ dataset.token_count }}</div>
+  {% else %}
+  <div style="margin-top: 12px; color: #8C8C8C;">Hozircha aktiv dataset mavjud emas</div>
+  {% endif %}
+</div>
+
+<div style="margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+  <a class="btn" href="/test/">✍️ {% if completed_count > 0 %}Davom ettirish{% else %}Testlashni boshlash{% endif %}</a>
+  <a class="btn secondary" href="/statistics/">📈 Statistikani ko'rish</a>
+  
+  {% if completed_count > 0 %}
+  <form method="post" action="/reset-progress/" style="display: inline;" onsubmit="return confirm('Barcha jarayonni qaytadan boshlaysizmi? Hozirgi progress o\'chadi.');">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+      🔄 Qaytadan boshlash
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<h2>📝 Oxirgi harakatlar</h2>
+<table>
+  <thead>
+    <tr>
+      <th>So'z</th>
+      <th>Harakat</th>
+      <th>Vaqt</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ann in recent_annotations %}
+    <tr>
+      <td><strong>{{ ann.word }}</strong></td>
+      <td><span style="color: #667eea;">{{ ann.action }}</span></td>
+      <td>{{ ann.created_at|date:"d.m.Y H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="3" style="text-align: center; padding: 40px; color: #999;">Hali annotatsiya amalga oshirilmagan</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

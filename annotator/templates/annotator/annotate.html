@@ -1,0 +1,285 @@
+{% extends 'annotator/base.html' %}
+{% block title %}Testlash{% endblock %}
+{% block extra_head %}
+<style>
+  .test-header {
+    background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 16px rgba(24, 144, 255, 0.3);
+  }
+  .test-header h1 {
+    margin: 0;
+    color: white;
+  }
+  .meta { 
+    color: rgba(255, 255, 255, 0.95);
+    margin-top: 14px;
+    font-size: 1em;
+  }
+  .word-container {
+    background: white;
+    border: 2px solid #E3F2FD;
+    padding: 35px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.08);
+  }
+  .word { 
+    font-size: 3.5em;
+    font-weight: 800;
+    color: #1890FF;
+    margin: 0;
+  }
+  .rows { 
+    display: grid;
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  .seg-row { 
+    display: grid;
+    grid-template-columns: minmax(200px, 1.5fr) minmax(240px, 1fr) minmax(140px, 0.8fr) 50px;
+    gap: 12px;
+    align-items: center;
+    background: white;
+    border: 1px solid #E3F2FD;
+    padding: 14px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(24, 144, 255, 0.05);
+  }
+  .seg-row:hover {
+    border-color: #1890FF;
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+    transform: translateX(3px);
+  }
+  input, select { 
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px 15px;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s;
+    font-family: inherit;
+    background: white;
+    color: #262626;
+    font-weight: 500;
+  }
+  input::placeholder {
+    color: #BFBFBF;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #1890FF;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  }
+  select option {
+    background: white;
+    color: #262626;
+  }
+  .code { 
+    background: #E6F7FF;
+    border: 1px solid #91D5FF;
+    padding: 13px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+    color: #1890FF;
+    font-size: 1.05em;
+  }
+  .add { 
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%);
+    color: white;
+    font-size: 26px;
+    height: 48px;
+    width: 48px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  }
+  .add:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 4px 16px rgba(24, 144, 255, 0.4);
+  }
+  .actions { 
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 25px;
+  }
+  .msg { 
+    min-height: 32px;
+    margin-top: 22px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    background: #F6FFED;
+    border: 1px solid #B7EB8F;
+    color: #52C41A;
+    font-weight: 600;
+    text-align: center;
+  }
+  .msg:empty {
+    display: none;
+  }
+  .help-text {
+    background: #FFFBE6;
+    border: 1px solid #FFE58F;
+    padding: 22px;
+    border-radius: 8px;
+    margin-top: 28px;
+  }
+  .help-text strong {
+    color: #D48806;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="test-header">
+  <h1>✍️ Morfologik segmentatsiya</h1>
+  <div class="meta" id="meta">Yuklanmoqda...</div>
+</div>
+
+<div class="word-container">
+  <div class="word" id="word">...</div>
+</div>
+
+<div class="rows" id="rows"></div>
+
+<div class="actions">
+  <button class="btn green" onclick="saveAction('save')">💾 Saqlash</button>
+  <button class="btn red" onclick="saveAction('delete')">🗑️ O'chirish</button>
+  <button class="btn" onclick="reanalyze()">🔄 Qayta tahlil</button>
+  <button class="btn secondary" onclick="prevItem()">◀ Oldingi</button>
+  <button class="btn" onclick="nextItem()">Keyingi ▶</button>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<div class="help-text">
+  <strong>📋 Qo'llanma:</strong> Har bir qatorda so'z bo'lagi (segment), tegishli tag va kodini ko'rasiz. Yangi bo'lak qo'shish uchun <strong>+</strong> tugmasini bosing. Birinchi bo'lak doim o'zak hisoblanadi.
+</div>
+
+<script>
+const codeByTag = { STEM:'0.0.0', PLURAL:'1.1.1', POSSESSIVE:'2.2.2', CASE:'3.3.3', UNKNOWN:'9.9.9' };
+let currentPosition = 0;
+let currentTokenIndex = 0;
+let currentWord = '';
+let currentStrategy = 'primary';
+
+function rowTemplate(segment='', tag='STEM', code='0.0.0') {
+  const div = document.createElement('div');
+  div.className = 'seg-row';
+  div.innerHTML = `
+    <input class="seg-input" type="text" value="${segment}" placeholder="Segment matni" />
+    <select class="tag-select">
+      <option value="STEM">O'zak (Stem)</option>
+      <option value="PLURAL">Ko'plik (-lar/-ler)</option>
+      <option value="POSSESSIVE">Egalik (-im/-ing/-i/-si/-imiz/-ingiz/-lari)</option>
+      <option value="CASE">Kelishik (-ni/-ning/-ga/-da/-dan)</option>
+      <option value="UNKNOWN">Noma'lum</option>
+    </select>
+    <div class="code">${code}</div>
+    <button class="add" type="button" title="Yangi qator qo'shish">+</button>`;
+  const select = div.querySelector('.tag-select');
+  const codeDiv = div.querySelector('.code');
+  select.value = tag || 'UNKNOWN';
+  select.addEventListener('change', () => { codeDiv.textContent = codeByTag[select.value] || '9.9.9'; });
+  div.querySelector('.add').addEventListener('click', () => {
+    document.getElementById('rows').insertBefore(rowTemplate('', 'UNKNOWN', '9.9.9'), div.nextSibling);
+  });
+  return div;
+}
+
+function renderRows(segments, tags, codes) {
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '';
+  for (let i = 0; i < segments.length; i++) {
+    rows.appendChild(rowTemplate(segments[i] || '', tags[i] || 'UNKNOWN', codes[i] || '9.9.9'));
+  }
+}
+
+function collectRows() {
+  const rows = Array.from(document.querySelectorAll('.seg-row'));
+  const segments = [];
+  const tags = [];
+  for (const row of rows) {
+    const seg = row.querySelector('.seg-input').value.trim();
+    const tag = row.querySelector('.tag-select').value;
+    if (!seg) continue;
+    segments.push(seg);
+    tags.push(tag);
+  }
+  if (tags.length) tags[0] = 'STEM';
+  return { segments, tags };
+}
+
+async function loadItem(position=null) {
+  const query = position === null ? '' : `?position=${position}`;
+  const res = await fetch(`/api/item${query}`);
+  const data = await res.json();
+  if (!data.ok) {
+    document.getElementById('msg').textContent = data.message || '✅ Barcha tokenlar tugallandi!';
+    return;
+  }
+  currentPosition = data.position;
+  currentTokenIndex = data.token_index;
+  currentWord = data.word;
+  currentStrategy = data.existing ? data.existing.strategy : 'primary';
+  document.getElementById('meta').textContent = `📊 ${data.position + 1} / ${data.total} | ✅ Tugallangan: ${data.completed} | 🎯 Rejim: ${data.assignment_mode}`;
+  document.getElementById('word').textContent = currentWord;
+  const source = data.existing || data.analysis;
+  renderRows(source.segments, source.tags, source.codes);
+  const msgEl = document.getElementById('msg');
+  msgEl.textContent = data.existing ? `ℹ️ Oldin saqlangan: ${data.existing.action}` : '';
+  msgEl.style.background = data.existing ? '#dbeafe' : '#d1fae5';
+  msgEl.style.color = data.existing ? '#1e40af' : '#065f46';
+}
+
+async function reanalyze() {
+  const payload = collectRows();
+  const body = payload.segments.length ? { word: currentWord, segments: payload.segments, tags: payload.tags } : { word: currentWord };
+  const res = await fetch('/api/reanalyze', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!data.ok) return;
+  renderRows(data.analysis.segments, data.analysis.tags, data.analysis.codes);
+  currentStrategy = data.mode === 'alternate' ? 'alternate' : 'manual';
+  const msgEl = document.getElementById('msg');
+  msgEl.textContent = data.mode === 'alternate' ? '🔄 Alternativ tahlil qo\'llandi' : '✏️ Manual qayta belgilash qo\'llandi';
+  msgEl.style.background = '#e0e7ff';
+  msgEl.style.color = '#3730a3';
+}
+
+async function saveAction(action) {
+  const payload = collectRows();
+  if (!payload.segments.length) {
+    const msgEl = document.getElementById('msg');
+    msgEl.textContent = '⚠️ Kamida bitta segment kerak!';
+    msgEl.style.background = '#fee2e2';
+    msgEl.style.color = '#991b1b';
+    return;
+  }
+  const res = await fetch('/api/save', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ token_index: currentTokenIndex, word: currentWord, action, strategy: currentStrategy, segments: payload.segments, tags: payload.tags })
+  });
+  const data = await res.json();
+  const msgEl = document.getElementById('msg');
+  msgEl.textContent = data.message || '✅ Muvaffaqiyatli saqlandi!';
+  msgEl.style.background = '#d1fae5';
+  msgEl.style.color = '#065f46';
+  await loadItem(currentPosition + 1);
+}
+
+async function prevItem() { if (currentPosition > 0) await loadItem(currentPosition - 1); }
+async function nextItem() { await loadItem(currentPosition + 1); }
+loadItem();
+</script>
+{% endblock %}

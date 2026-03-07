@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>O'zbek Morfologik Segmentatsiya</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f7fb; }
+    .wrap { max-width: 980px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 8px; }
+    .meta { color: #4b5563; margin-bottom: 12px; }
+    .word { font-size: 34px; font-weight: 700; color: #0b5394; margin: 10px 0 14px; }
+    .rows { display: grid; gap: 10px; }
+    .seg-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(140px, 1fr) 48px; gap: 8px; align-items: center; }
+    input, select { width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
+    .code { background: #f8fafc; border: 1px dashed #94a3b8; padding: 9px; border-radius: 8px; text-align: center; font-weight: 600; }
+    .add { border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-size: 22px; height: 40px; cursor: pointer; }
+    .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .btn { border: 0; border-radius: 8px; padding: 10px 14px; color: #fff; font-weight: 700; cursor: pointer; }
+    .save { background: #16a34a; }
+    .del { background: #dc2626; }
+    .upd { background: #7c3aed; }
+    .rean { background: #0f766e; }
+    .prev { background: #4b5563; }
+    .next { background: #2563eb; }
+    .msg { min-height: 22px; margin-top: 10px; color: #065f46; }
+    .hint { margin-top: 12px; color: #374151; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Morfologik segmentatsiya test sahifasi</h1>
+    <div class="meta" id="meta"></div>
+    <div class="word" id="word">...</div>
+
+    <div class="rows" id="rows"></div>
+
+    <div class="actions">
+      <button class="btn save" onclick="saveAction('save')">Saqlash</button>
+      <button class="btn del" onclick="saveAction('delete')">O'chirish</button>
+      <button class="btn upd" onclick="saveAction('save')">Tahrirlab saqlash</button>
+      <button class="btn rean" onclick="reanalyze()">Qayta tahlil</button>
+      <button class="btn prev" onclick="prevItem()">Oldingi</button>
+      <button class="btn next" onclick="nextItem()">Keyingi</button>
+    </div>
+
+    <div class="msg" id="msg"></div>
+    <div class="hint">Taglar: O'zak / Ko'plik / Egalik qo'shimchasi / Kelishik qo'shimchasi. Kodlar avtomatik chiqadi (0.0.0, 1.1.1, 2.2.2, 3.3.3).</div>
+  </div>
+
+  <script>
+    const tagUz = {
+      STEM: "O'zak",
+      PLURAL: "Ko'plik",
+      POSSESSIVE: "Egalik qo'shimchasi",
+      CASE: "Kelishik qo'shimchasi",
+      UNKNOWN: "Noma'lum"
+    };
+
+    const codeByTag = {
+      STEM: "0.0.0",
+      PLURAL: "1.1.1",
+      POSSESSIVE: "2.2.2",
+      CASE: "3.3.3",
+      UNKNOWN: "9.9.9"
+    };
+
+    let currentIndex = 0;
+    let totalCount = 0;
+    let currentWord = "";
+    let currentStrategy = "primary";
+
+    function rowTemplate(segment = "", tag = "STEM", code = "0.0.0") {
+      const div = document.createElement('div');
+      div.className = 'seg-row';
+      div.innerHTML = `
+        <input class="seg-input" type="text" value="${segment}" />
+        <select class="tag-select">
+          <option value="STEM">O'zak</option>
+          <option value="PLURAL">Ko'plik</option>
+          <option value="POSSESSIVE">Egalik qo'shimchasi</option>
+          <option value="CASE">Kelishik qo'shimchasi</option>
+          <option value="UNKNOWN">Noma'lum</option>
+        </select>
+        <div class="code">${code}</div>
+        <button class="add" type="button">+</button>
+      `;
+
+      const select = div.querySelector('.tag-select');
+      const codeDiv = div.querySelector('.code');
+      const addBtn = div.querySelector('.add');
+      select.value = tag;
+
+      select.addEventListener('change', () => {
+        codeDiv.textContent = codeByTag[select.value] || '9.9.9';
+      });
+
+      addBtn.addEventListener('click', () => {
+        const rows = document.getElementById('rows');
+        rows.insertBefore(rowTemplate("", "UNKNOWN", "9.9.9"), div.nextSibling);
+      });
+
+      return div;
+    }
+
+    function renderRows(segments, tags, codes) {
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '';
+      for (let i = 0; i < segments.length; i++) {
+        rows.appendChild(rowTemplate(segments[i] || '', tags[i] || 'UNKNOWN', codes[i] || (codeByTag[tags[i]] || '9.9.9')));
+      }
+    }
+
+    function collectRows() {
+      const rows = Array.from(document.querySelectorAll('.seg-row'));
+      const segments = [];
+      const tags = [];
+      for (const r of rows) {
+        const seg = r.querySelector('.seg-input').value.trim();
+        const tag = r.querySelector('.tag-select').value;
+        if (!seg) continue;
+        segments.push(seg);
+        tags.push(tag);
+      }
+      if (segments.length > 0) {
+        tags[0] = 'STEM';
+      }
+      return { segments, tags };
+    }
+
+    async function loadItem(index) {
+      const res = await fetch(`/api/item?index=${index}`);
+      const data = await res.json();
+      if (!data.ok) {
+        document.getElementById('msg').textContent = data.message || "Tugadi";
+        return;
+      }
+
+      currentIndex = data.index;
+      totalCount = data.total;
+      currentWord = data.word;
+      currentStrategy = 'primary';
+
+      document.getElementById('meta').textContent = `${currentIndex + 1} / ${totalCount}`;
+      document.getElementById('word').textContent = currentWord;
+
+      const source = data.existing ? data.existing : data.analysis;
+      renderRows(source.segments, source.tags, source.codes);
+
+      document.getElementById('msg').textContent = data.existing
+        ? `Oldin saqlangan: ${data.existing.action.toUpperCase()} (${data.existing.strategy})`
+        : 'Yangi token';
+    }
+
+    async function reanalyze() {
+      const payload = collectRows();
+      const hasManual = payload.segments.length > 0;
+      const body = hasManual
+        ? { word: currentWord, segments: payload.segments, tags: payload.tags }
+        : { word: currentWord };
+
+      const res = await fetch('/api/reanalyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!data.ok) return;
+      renderRows(data.analysis.segments, data.analysis.tags, data.analysis.codes);
+      currentStrategy = data.mode === 'alternate' ? 'alternate' : 'manual';
+      document.getElementById('msg').textContent = data.mode === 'alternate' ? 'Qayta tahlil (alternativ) qo\'llandi.' : 'Manual relabel qo\'llandi.';
+    }
+
+    async function saveAction(action) {
+      const payload = collectRows();
+      if (payload.segments.length === 0) {
+        document.getElementById('msg').textContent = "Kamida bitta segment bo'lishi kerak.";
+        return;
+      }
+
+      const res = await fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          index: currentIndex,
+          word: currentWord,
+          action,
+          strategy: currentStrategy,
+          segments: payload.segments,
+          tags: payload.tags
+        })
+      });
+      const data = await res.json();
+      document.getElementById('msg').textContent = data.message || 'Saqlandi';
+      await loadItem(currentIndex + 1);
+    }
+
+    async function prevItem() {
+      if (currentIndex <= 0) return;
+      await loadItem(currentIndex - 1);
+    }
+
+    async function nextItem() {
+      await loadItem(currentIndex + 1);
+    }
+
+    loadItem(0);
+  </script>
+</body>
+</html>

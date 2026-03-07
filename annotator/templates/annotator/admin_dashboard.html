@@ -1,0 +1,655 @@
+{% extends "annotator/base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<style>
+    .admin-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%);
+        color: white;
+        padding: 35px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 16px rgba(24, 144, 255, 0.3);
+    }
+    
+    .page-header h1 {
+        margin: 0;
+        font-size: 2.8em;
+        font-weight: 700;
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border: 2px solid #E3F2FD;
+        padding: 28px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.08);
+        border-left: 4px solid #1890FF;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(24, 144, 255, 0.2);
+        border-color: #1890FF;
+    }
+    
+    .stat-card h3 {
+        margin: 0 0 12px 0;
+        color: #1890FF;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+    
+    .stat-card .value {
+        font-size: 2.8em;
+        font-weight: 800;
+        color: #1E88E5;
+        margin: 0;
+    }
+    
+    .section {
+        background: white;
+        border: 2px solid #E3F2FD;
+        padding: 35px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08);
+        margin-bottom: 30px;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        padding-bottom: 18px;
+        border-bottom: 2px solid #E3F2FD;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        color: #1890FF;
+        font-size: 1.9em;
+        font-weight: 600;
+    }
+    
+    .btn {
+        padding: 13px 26px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(24, 144, 255, 0.4);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #FF4D4F 0%, #FF7875 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #F5F5F5;
+        color: #595959;
+        border: 1px solid #D9D9D9;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #262626;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 13px 16px;
+        border: 1px solid #D9D9D9;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.3s;
+        background: white;
+        color: #262626;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #1890FF;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+    }
+    
+    .form-control::placeholder {
+        color: #BFBFBF;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        margin-top: 20px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    th, td {
+        padding: 15px;
+        text-align: left;
+    }
+    
+    th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+    }
+    
+    tbody tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s;
+    }
+    
+    tbody tr:hover {
+        background: #f8f9ff;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+    
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-secondary {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .badge-primary {
+        background: #cfe2ff;
+        color: #084298;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 650px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%);
+        color: white;
+        padding: 28px;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: white;
+    }
+    }
+    
+    .modal-body {
+        padding: 30px;
+    }
+    
+    .close {
+        color: white;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    
+    .close:hover {
+        opacity: 1;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .action-buttons form {
+        display: inline;
+    }
+    
+    .export-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .export-btn {
+        padding: 15px;
+        background: white;
+        border: 2px solid #667eea;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .export-btn:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+</style>
+
+<div class="admin-container">
+    <div class="page-header">
+        <h1>🎛️ Administrator paneli</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">Dataset boshqaruvi va statistika</p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div style="margin-bottom: 25px;">
+        {% for message in messages %}
+        <div style="padding: 15px 20px; border-radius: 10px; margin-bottom: 10px; {% if message.tags == 'success' %}background: #d1fae5; color: #065f46; border: 2px solid #10b981;{% elif message.tags == 'error' %}background: #fee2e2; color: #991b1b; border: 2px solid #ef4444;{% else %}background: #dbeafe; color: #1e40af; border: 2px solid #3b82f6;{% endif %}">
+            <strong>{{ message }}</strong>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Statistika kartochkalari -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>📊 Jami annotatsiyalar</h3>
+            <p class="value">{{ total_annotations }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>✅ Bajarilgan</h3>
+            <p class="value">{{ total_completed }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>⏳ Kutilmoqda</h3>
+            <p class="value">{{ total_pending }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>👥 Annotatorlar</h3>
+            <p class="value">{{ users.count }}</p>
+        </div>
+    </div>
+
+    <!-- Dataset yaratish -->
+    <div class="section">
+        <div class="section-header">
+            <h2>➕ Yangi dataset yaratish</h2>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('createModal').style.display='block'">
+            Yangi dataset qo'shish
+        </button>
+    </div>
+
+    <!-- Datasetlar ro'yxati -->
+    <div class="section">
+        <div class="section-header">
+            <h2>📁 Datasetlar</h2>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nomi</th>
+                        <th>Tokenlar soni</th>
+                        <th>Rejim</th>
+                        <th>Holat</th>
+                        <th>Assignmentlar</th>
+                        <th>Yaratilgan</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dataset in datasets %}
+                    <tr>
+                        <td><strong>{{ dataset.name }}</strong></td>
+                        <td>{{ dataset.token_count|default:"?" }}</td>
+                        <td>
+                            <span class="badge badge-primary">
+                                {% if dataset.assignment_mode == 'shared' %}Umumiy{% else %}Individual{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if dataset.is_active %}
+                                <span class="badge badge-success">✓ Aktiv</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Faol emas</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ dataset.assignments.count }}</td>
+                        <td>{{ dataset.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if not dataset.is_active %}
+                                <form method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                                    <button type="submit" name="activate_dataset" class="btn btn-success" style="padding: 8px 16px;">
+                                        Aktivlashtirish
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                <button type="button" onclick="openEditModal({{ dataset.id }}, '{{ dataset.name }}', '{{ dataset.assignment_mode }}', {{ dataset.assignments.count }})" class="btn btn-primary" style="padding: 8px 16px;">
+                                    ✏️ Edit
+                                </button>
+                                
+                                {% if dataset.assignments.count > 0 %}
+                                <form method="post" onsubmit="return confirm('Barcha assignmentlarni o\'chirmoqchimisiz?');" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                                    <button type="submit" name="delete_assignments" class="btn btn-secondary" style="padding: 8px 16px;">
+                                        🗑️Delete
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                {% if not dataset.is_active %}
+                                <form method="post" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?');" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                                    <button type="submit" name="delete_dataset" class="btn btn-danger" style="padding: 8px 16px;">
+                                        O'chirish
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                            Hali dataset yaratilmagan
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Foydalanuvchilar statistikasi -->
+    <div class="section">
+        <div class="section-header">
+            <h2>👥 Foydalanuvchilar statistikasi</h2>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Foydalanuvchi</th>
+                        <th>Jami annotatsiyalar</th>
+                        <th>Bugungi annotatsiyalar</th>
+                        <th>Oxirgi faollik</th>
+                        <th>Export</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.total_annotations }}</td>
+                        <td>{{ user.today_annotations }}</td>
+                        <td>
+                            {% if user.last_activity %}
+                                {{ user.last_activity|date:"d.m.Y H:i" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'export_admin_results_user' scope='user' fmt='csv' user_id=user.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85em;">
+                                CSV
+                            </a>
+                            <a href="{% url 'export_admin_results_user' scope='user' fmt='jsonl' user_id=user.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85em;">
+                                JSONL
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #999;">
+                            Annotatorlar topilmadi
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Export bo'limi -->
+    <div class="section">
+        <div class="section-header">
+            <h2>💾 Ma'lumotlarni export qilish</h2>
+        </div>
+        
+        <div class="export-section">
+            <a href="{% url 'export_admin_results' scope='all' fmt='csv' %}" class="export-btn">
+                📄 Barcha annotatsiyalar (CSV)
+            </a>
+            <a href="{% url 'export_admin_results' scope='all' fmt='jsonl' %}" class="export-btn">
+                📄 Barcha annotatsiyalar (JSONL)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Dataset yaratish modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close" onclick="document.getElementById('createModal').style.display='none'">&times;</span>
+            <h2>Yangi dataset yaratish</h2>
+        </div>
+        <div class="modal-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="name">Dataset nomi:</label>
+                    <input type="text" id="name" name="name" class="form-control" required placeholder="Masalan: Yangi korpus 2026">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tokens_file">Tokenlar fayli (TSV/CSV):</label>
+                    <input type="file" id="tokens_file" name="tokens_file" class="form-control" accept=".tsv,.csv" required>
+                    <small style="color: #666;">Format: har bir qatorda bitta token</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="suffix_file">Suffixlar fayli (TSV/CSV):</label>
+                    <input type="file" id="suffix_file" name="suffix_file" class="form-control" accept=".tsv,.csv" required>
+                    <small style="color: #666;">Format: suffix, type, subtype, code</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="assignment_mode">Assignment rejimi:</label>
+                    <select id="assignment_mode" name="assignment_mode" class="form-control">
+                        <option value="shared">Umumiy (hammaga bir xil tokenlar)</option>
+                        <option value="individual">Individual (har biriga alohida)</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" name="create_dataset" class="btn btn-primary" style="flex: 1;">
+                        Yaratish
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('createModal').style.display='none'" style="flex: 0.3;">
+                        Bekor qilish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Dataset tahrirlash modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
+            <h2>Dataset tahrirlash</h2>
+        </div>
+        <div class="modal-body">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" id="edit_dataset_id" name="dataset_id" value="">
+                
+                <div class="form-group">
+                    <label>Dataset nomi:</label>
+                    <input type="text" id="edit_dataset_name" class="form-control" readonly style="background: #f0f0f0;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Hozirgi holat:</label>
+                    <div style="padding: 12px; background: #f8f9ff; border-radius: 8px; border: 2px solid #e5e7ff;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span><strong>Rejim:</strong></span>
+                            <span id="current_mode"></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>Assignmentlar:</strong></span>
+                            <span id="current_assignments"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_assignment_mode">Yangi rejim:</label>
+                    <select id="edit_assignment_mode" name="new_assignment_mode" class="form-control">
+                        <option value="shared">Umumiy (hammaga bir xil tokenlar)</option>
+                        <option value="individual">Individual (har biriga alohida)</option>
+                    </select>
+                    <small style="color: #666; margin-top: 8px; display: block;">
+                        ⚠️ Rejimni o'zgartirsangiz, barcha eski assignmentlar o'chiriladi va yangisi yaratiladi.
+                    </small>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" name="update_dataset" class="btn btn-primary" style="flex: 1;">
+                        💾 Saqlash va assignmentlarni qayta yaratish
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'" style="flex: 0.3;">
+                        Bekor qilish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditModal(datasetId, datasetName, currentMode, assignmentCount) {
+    document.getElementById('edit_dataset_id').value = datasetId;
+    document.getElementById('edit_dataset_name').value = datasetName;
+    document.getElementById('current_mode').textContent = currentMode === 'shared' ? 'Umumiy' : 'Individual';
+    document.getElementById('current_assignments').textContent = assignmentCount + ' ta';
+    document.getElementById('edit_assignment_mode').value = currentMode;
+    document.getElementById('editModal').style.display = 'block';
+}
+
+// Modal tashqarisiga bosilganda yopish
+window.onclick = function(event) {
+    var createModal = document.getElementById('createModal');
+    var editModal = document.getElementById('editModal');
+    if (event.target == createModal) {
+        createModal.style.display = "none";
+    }
+    if (event.target == editModal) {
+        editModal.style.display = "none";
+    }
+}
+</script>
+{% endblock %}
