@@ -1,0 +1,156 @@
+{% extends 'annotator/base.html' %}
+{% block title %}Token #{{ token_index }}: {{ word }}{% endblock %}
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'token_review_list' %}" style="color: #1890FF; text-decoration: none; font-weight: 600;">← Orqaga</a>
+</div>
+
+<h1>🔍 Token #{{ token_index }}</h1>
+
+{% if messages %}
+<div style="margin-bottom: 28px;">
+    {% for message in messages %}
+    <div style="padding: 16px 22px; border-radius: 8px; margin-bottom: 12px; {% if message.tags == 'success' %}background: #F6FFED; color: #52C41A; border: 1px solid #B7EB8F;{% elif message.tags == 'error' %}background: #FFF1F0; color: #FF4D4F; border: 1px solid #FFCCC7;{% else %}background: #E6F7FF; color: #1890FF; border: 1px solid #91D5FF;{% endif %}">
+        <strong>{{ message }}</strong>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="margin-bottom: 30px; padding: 30px; background: white; border: 2px solid #E3F2FD; border-radius: 12px; text-align: center;">
+    <div style="font-size: 3em; font-weight: 800; color: #1890FF; margin-bottom: 10px;">{{ word }}</div>
+    <div class="muted">Dataset: {{ dataset.name }}</div>
+</div>
+
+{% for item in token_annotations %}
+<div style="margin-bottom: 30px; padding: 25px; background: white; border: 2px solid #E3F2FD; border-radius: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #E3F2FD;">
+        <div>
+            <strong style="color: #1890FF; font-size: 1.2em;">👤 {{ item.assignment.user.username }}</strong>
+            <div class="muted" style="margin-top: 5px;">
+                {% if item.assignment.is_completed %}
+                ✅ Tugallangan: {{ item.assignment.completed_at|date:"d.m.Y H:i" }}
+                {% else %}
+                ⏳ Bajarilmoqda
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <span style="background: #E6F7FF; color: #1890FF; padding: 8px 16px; border-radius: 12px; font-weight: 600;">
+                {{ item.annotations|length }} ta annotation
+            </span>
+        </div>
+    </div>
+
+    {% if item.annotations %}
+    <div style="display: grid; gap: 15px;">
+        {% for ann in item.annotations %}
+        <div style="padding: 20px; background: #F5F5F5; border-radius: 8px; border-left: 4px solid #1890FF;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <div>
+                    <strong style="color: #1890FF;">{{ ann.action|upper }}</strong>
+                    <span class="muted" style="margin-left: 15px;">{{ ann.created_at|date:"d.m.Y H:i:s" }}</span>
+                </div>
+                <div>
+                    <button onclick="editAnnotation{{ ann.id }}()" class="btn" style="padding: 6px 12px; background: #FFF; border: 1px solid #1890FF; color: #1890FF; border-radius: 6px; font-size: 0.85em; margin-right: 5px; cursor: pointer;">✏️ Tahrirlash</button>
+                    <form method="post" action="{% url 'annotation_delete' ann.id %}" style="display: inline;" onsubmit="return confirm('Haqiqatan ham o\'chirmoqchimisiz?');">
+                        {% csrf_token %}
+                        <button type="submit" style="padding: 6px 12px; background: #FFF; border: 1px solid #FF4D4F; color: #FF4D4F; border-radius: 6px; font-size: 0.85em; cursor: pointer;">🗑️ O'chirish</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view{{ ann.id }}" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div>
+                    <div style="font-weight: 600; color: #595959; margin-bottom: 8px;">Segmentlar:</div>
+                    <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #D9D9D9;">
+                        {{ ann.segments|join:", " }}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: #595959; margin-bottom: 8px;">Teglar:</div>
+                    <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #D9D9D9;">
+                        {{ ann.tags|join:", " }}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: #595959; margin-bottom: 8px;">Subtypes:</div>
+                    <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #D9D9D9;">
+                        {{ ann.subtypes|join:", " }}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: #595959; margin-bottom: 8px;">Codes:</div>
+                    <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #D9D9D9;">
+                        {{ ann.codes|join:", " }}
+                    </div>
+                </div>
+            </div>
+
+            <form id="edit{{ ann.id }}" method="post" action="{% url 'annotation_edit' ann.id %}" style="display: none;">
+                {% csrf_token %}
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-weight: 600; color: #595959; margin-bottom: 8px; display: block;">Segmentlar (vergul bilan):</label>
+                        <input type="text" name="segments_input" id="segments_input{{ ann.id }}" value="{{ ann.segments|join:',' }}" style="width: 100%; padding: 10px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; color: #595959; margin-bottom: 8px; display: block;">Teglar (vergul bilan):</label>
+                        <input type="text" name="tags_input" id="tags_input{{ ann.id }}" value="{{ ann.tags|join:',' }}" style="width: 100%; padding: 10px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; color: #595959; margin-bottom: 8px; display: block;">Subtypes (vergul bilan):</label>
+                        <input type="text" name="subtypes_input" id="subtypes_input{{ ann.id }}" value="{{ ann.subtypes|join:',' }}" style="width: 100%; padding: 10px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; color: #595959; margin-bottom: 8px; display: block;">Codes (vergul bilan):</label>
+                        <input type="text" name="codes_input" id="codes_input{{ ann.id }}" value="{{ ann.codes|join:',' }}" style="width: 100%; padding: 10px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                    </div>
+                </div>
+                <input type="hidden" name="segments" id="segments{{ ann.id }}">
+                <input type="hidden" name="tags" id="tags{{ ann.id }}">
+                <input type="hidden" name="subtypes" id="subtypes{{ ann.id }}">
+                <input type="hidden" name="codes" id="codes{{ ann.id }}">
+                <button type="button" onclick="saveAnnotation{{ ann.id }}()" class="btn" style="padding: 8px 16px; background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">💾 Saqlash</button>
+                <button type="button" onclick="cancelEdit{{ ann.id }}()" style="padding: 8px 16px; background: #F5F5F5; color: #595959; border: 1px solid #D9D9D9; border-radius: 6px; cursor: pointer;">❌ Bekor qilish</button>
+            </form>
+
+            <script>
+            function editAnnotation{{ ann.id }}() {
+                document.getElementById('view{{ ann.id }}').style.display = 'none';
+                document.getElementById('edit{{ ann.id }}').style.display = 'block';
+            }
+            function cancelEdit{{ ann.id }}() {
+                document.getElementById('view{{ ann.id }}').style.display = 'grid';
+                document.getElementById('edit{{ ann.id }}').style.display = 'none';
+            }
+            function saveAnnotation{{ ann.id }}() {
+                const segmentsInput = document.getElementById('segments_input{{ ann.id }}').value;
+                const tagsInput = document.getElementById('tags_input{{ ann.id }}').value;
+                const subtypesInput = document.getElementById('subtypes_input{{ ann.id }}').value;
+                const codesInput = document.getElementById('codes_input{{ ann.id }}').value;
+                
+                const segments = segmentsInput.split(',').map(s => s.trim()).filter(s => s);
+                const tags = tagsInput.split(',').map(s => s.trim()).filter(s => s);
+                const subtypes = subtypesInput.split(',').map(s => s.trim()).filter(s => s);
+                const codes = codesInput.split(',').map(s => s.trim()).filter(s => s);
+                
+                document.getElementById('segments{{ ann.id }}').value = JSON.stringify(segments);
+                document.getElementById('tags{{ ann.id }}').value = JSON.stringify(tags);
+                document.getElementById('subtypes{{ ann.id }}').value = JSON.stringify(subtypes);
+                document.getElementById('codes{{ ann.id }}').value = JSON.stringify(codes);
+                
+                document.getElementById('edit{{ ann.id }}').submit();
+            }
+            </script>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 30px; color: #8C8C8C;">
+        Hali annotation yo'q
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

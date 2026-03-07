@@ -1,0 +1,156 @@
+{% extends 'annotator/base.html' %}
+{% block title %}Tokenlar ko'rish{% endblock %}
+{% block content %}
+<h1>📋 Barcha tokenlar</h1>
+
+{% if messages %}
+<div style="margin-bottom: 28px;">
+    {% for message in messages %}
+    <div style="padding: 16px 22px; border-radius: 8px; margin-bottom: 12px; {% if message.tags == 'success' %}background: #F6FFED; color: #52C41A; border: 1px solid #B7EB8F;{% elif message.tags == 'error' %}background: #FFF1F0; color: #FF4D4F; border: 1px solid #FFCCC7;{% else %}background: #E6F7FF; color: #1890FF; border: 1px solid #91D5FF;{% endif %}">
+        <strong>{{ message }}</strong>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="margin-bottom: 25px; padding: 20px; background: white; border: 2px solid #E3F2FD; border-radius: 12px;">
+    <strong style="color: #1890FF;">📁 Dataset:</strong> {{ dataset.name }}
+    <div class="muted" style="margin-top: 8px;">Jami tokenlar: {{ token_data|length }}</div>
+</div>
+
+<!-- Filtrlar -->
+<div style="margin-bottom: 25px; padding: 20px; background: white; border: 2px solid #E3F2FD; border-radius: 12px;">
+    <strong style="color: #1890FF; display: block; margin-bottom: 15px;">🔍 Filtrlar:</strong>
+    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <div>
+            <label style="font-weight: 600; color: #595959; margin-right: 10px;">Holat:</label>
+            <select id="holatFilter" onchange="filterTable()" style="padding: 8px 15px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                <option value="all">Barchasi</option>
+                <option value="completed">✅ Tugallangan</option>
+                <option value="pending">⏳ Bajarilmoqda</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-weight: 600; color: #595959; margin-right: 10px;">Status:</label>
+            <select id="statusFilter" onchange="filterTable()" style="padding: 8px 15px; border: 1px solid #D9D9D9; border-radius: 6px;">
+                <option value="all">Barchasi</option>
+                <option value="save">💾 Save</option>
+                <option value="update">🔄 Update</option>
+                <option value="delete">🗑️ Delete</option>
+                <option value="none">Yo'q</option>
+            </select>
+        </div>
+        <button onclick="resetFilters()" style="padding: 8px 20px; background: #F5F5F5; border: 1px solid #D9D9D9; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            🔄 Tozalash
+        </button>
+    </div>
+</div>
+
+<table id="tokensTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>BO'LAKLASH USULI</th>
+            <th>FOYDALANUVCHI</th>
+            <th>STATUS</th>
+            <th>HOLAT</th>
+            <th>OXIRGI ANNOTATION</th>
+            <th>AMALLAR</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in token_data %}
+        <tr data-holat="{% if item.assignment.is_completed %}completed{% else %}pending{% endif %}" 
+            data-status="{% if item.latest_annotation %}{{ item.latest_annotation.action }}{% else %}none{% endif %}">
+            <td><strong>{{ item.assignment.token_index }}</strong></td>
+            <td>
+                {% if item.latest_annotation %}
+                <code style="background: #F0F8FF; padding: 6px 12px; border-radius: 6px; font-family: 'Courier New', monospace; color: #1890FF; font-size: 0.9em;">
+                    {{ item.latest_annotation.segments|join:", " }}
+                </code>
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td>{{ item.assignment.user.username }}</td>
+            <td>
+                {% if item.latest_annotation %}
+                    {% if item.latest_annotation.action == 'save' %}
+                    <span style="background: #F6FFED; color: #52C41A; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">💾 Save</span>
+                    {% elif item.latest_annotation.action == 'update' %}
+                    <span style="background: #E6F7FF; color: #1890FF; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">🔄 Update</span>
+                    {% elif item.latest_annotation.action == 'delete' %}
+                    <span style="background: #FFF1F0; color: #FF4D4F; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">🗑️ Delete</span>
+                    {% endif %}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if item.assignment.is_completed %}
+                <span style="background: #F6FFED; color: #52C41A; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✅ Tugallangan</span>
+                {% else %}
+                <span style="background: #FFF7E6; color: #FA8C16; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">⏳ Bajarilmoqda</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if item.latest_annotation %}
+                {{ item.latest_annotation.created_at|date:"d.m.Y H:i" }}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'token_detail' item.assignment.token_index %}" class="btn" style="padding: 8px 16px; background: linear-gradient(135deg, #1890FF 0%, #1E88E5 100%); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85em;">
+                    👁️ Ko'rish
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 40px; color: #8C8C8C;">Tokenlar topilmadi</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function filterTable() {
+    const holatFilter = document.getElementById('holatFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const table = document.getElementById('tokensTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    let visibleCount = 0;
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.cells.length === 1) continue; // Skip empty message row
+        
+        const rowHolat = row.getAttribute('data-holat');
+        const rowStatus = row.getAttribute('data-status');
+        
+        let showRow = true;
+        
+        // Holat filtri
+        if (holatFilter !== 'all' && rowHolat !== holatFilter) {
+            showRow = false;
+        }
+        
+        // Status filtri
+        if (statusFilter !== 'all' && rowStatus !== statusFilter) {
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    }
+}
+
+function resetFilters() {
+    document.getElementById('holatFilter').value = 'all';
+    document.getElementById('statusFilter').value = 'all';
+    filterTable();
+}
+</script>
+{% endblock %}

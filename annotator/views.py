@@ -289,6 +289,7 @@ def api_save(request):
     annotation = Annotation.objects.create(
         dataset=dataset,
         user=request.user,
+        assignment=assignment,
         token_index=token_index,
         word=word,
         action=final_action,
@@ -453,9 +454,16 @@ def admin_dashboard(request):
         if dataset_id:
             dataset = DatasetConfig.objects.filter(pk=dataset_id).first()
             if dataset:
-                count = dataset.assignments.count()
+                assignment_count = dataset.assignments.count()
+                annotation_count = dataset.annotations.count()
+                
+                # Avval annotationlarni o'chirish
+                dataset.annotations.all().delete()
+                
+                # Keyin assignmentlarni o'chirish
                 dataset.assignments.all().delete()
-                messages.success(request, f"{count} ta assignment o'chirildi.")
+                
+                messages.success(request, f"{assignment_count} ta assignment va {annotation_count} ta annotation o'chirildi.")
             else:
                 messages.error(request, "Dataset topilmadi.")
         return redirect("admin_dashboard")
@@ -492,4 +500,149 @@ def admin_dashboard(request):
     
     return render(request, "annotator/admin_dashboard.html", context)
 
-    return _export_csv(rows, filename)
+
+@login_required
+def token_review_list(request):
+    """Barcha tokenlar va ularning annotation'lari"""
+    dataset = get_active_dataset()
+    if not dataset:
+        messages.error(request, "Aktiv dataset yo'q.")
+        return redirect("home")
+    
+    # Admin uchun barcha tokenlar, oddiy user uchun faqat o'ziniki
+    if request.user.is_superuser or request.user.role == "admin":
+        assignments = TokenAssignment.objects.filter(dataset=dataset).select_related("user").order_by("token_index")
+    else:
+        assignments = TokenAssignment.objects.filter(dataset=dataset, user=request.user).order_by("token_index")
+    
+    # Har bir token uchun annotation sonini hisoblash
+    token_data = []
+    for assignment in assignments:
+        annotation_count = Annotation.objects.filter(
+            dataset=dataset,
+            token_index=assignment.token_index,
+            user=assignment.user
+        ).count()
+        
+        latest_annotation = Annotation.objects.filter(
+            dataset=dataset,
+            token_index=assignment.token_index,
+            user=assignment.user
+        ).order_by("-created_at").first()
+        
+        token_data.append({
+            "assignment": assignment,
+            "annotation_count": annotation_count,
+            "latest_annotation": latest_annotation,
+        })
+    
+    context = {
+        "dataset": dataset,
+        "token_data": token_data,
+    }
+    return render(request, "annotator/token_review_list.html", context)
+
+
+@login_required
+def token_detail(request, token_index: int):
+    """Bitta token uchun barcha annotation'lar va tahrirlash"""
+    dataset = get_active_dataset()
+    if not dataset:
+        messages.error(request, "Aktiv dataset yo'q.")
+        return redirect("home")
+    
+    # Admin uchun barcha user'lar, oddiy user uchun faqat o'zi
+    if request.user.is_superuser or request.user.role == "admin":
+        assignments = TokenAssignment.objects.filter(
+            dataset=dataset,
+            token_index=token_index
+        ).select_related("user")
+    else:
+        assignments = TokenAssignment.objects.filter(
+            dataset=dataset,
+            token_index=token_index,
+            user=request.user
+        ).select_related("user")
+    
+    if not assignments.exists():
+        messages.error(request, "Token topilmadi.")
+        return redirect("token_review_list")
+    
+    # Har bir user uchun annotation'larni olish
+    token_annotations = []
+    for assignment in assignments:
+        annotations = Annotation.objects.filter(
+            dataset=dataset,
+            token_index=token_index,
+            user=assignment.user
+        ).order_by("-created_at")
+        
+        token_annotations.append({
+            "assignment": assignment,
+            "annotations": annotations,
+        })
+    
+    context = {
+        "dataset": dataset,
+        "token_index": token_index,
+        "word": assignments.first().word,
+        "token_annotations": token_annotations,
+    }
+    return render(request, "annotator/token_detail.html", context)
+
+
+@login_required
+@require_POST
+def annotation_edit(request, annotation_id: int):
+    """Annotation tahrirlash"""
+    annotation = Annotation.objects.filter(id=annotation_id).first()
+    
+    if not annotation:
+        messages.error(request, "Annotation topilmadi.")
+        return redirect("token_review_list")
+    
+    # Faqat o'z annotation'ini yoki admin tahrirlashi mumkin
+    if annotation.user != request.user and not (request.user.is_superuser or request.user.role == "admin"):
+        messages.error(request, "Siz bu annotation'ni tahrirlay olmaysiz.")
+        return redirect("token_review_list")
+    
+    try:
+        segments = json.loads(request.POST.get("segments", "[]"))
+        tags = json.loads(request.POST.get("tags", "[]"))
+        subtypes = json.loads(request.POST.get("subtypes", "[]"))
+        codes = json.loads(request.POST.get("codes", "[]"))
+        
+        annotation.segments = segments
+        annotation.tags = tags
+        annotation.subtypes = subtypes
+        annotation.codes = codes
+        annotation.action = "update"
+        annotation.save()
+        
+        messages.success(request, "Annotation tahrirlandi!")
+    except json.JSONDecodeError:
+        messages.error(request, "JSON ma'lumotlar xato.")
+    
+    return redirect("token_detail", token_index=annotation.token_index)
+
+
+@login_required
+@require_POST
+def annotation_delete(request, annotation_id: int):
+    """Annotation o'chirish"""
+    annotation = Annotation.objects.filter(id=annotation_id).first()
+    
+    if not annotation:
+        messages.error(request, "Annotation topilmadi.")
+        return redirect("token_review_list")
+    
+    # Faqat o'z annotation'ini yoki admin o'chirishi mumkin
+    if annotation.user != request.user and not (request.user.is_superuser or request.user.role == "admin"):
+        messages.error(request, "Siz bu annotation'ni o'chira olmaysiz.")
+        return redirect("token_review_list")
+    
+    token_index = annotation.token_index
+    annotation.delete()
+    messages.success(request, "Annotation o'chirildi!")
+    
+    return redirect("token_detail", token_index=token_index)

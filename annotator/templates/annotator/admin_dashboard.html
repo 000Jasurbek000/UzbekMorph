@@ -425,24 +425,22 @@
                                 </button>
                                 
                                 {% if dataset.assignments.count > 0 %}
-                                <form method="post" onsubmit="return confirm('Barcha assignmentlarni o\'chirmoqchimisiz?');" style="display: inline;">
+                                <form method="post" onsubmit="return confirm('Barcha assignmentlar va annotationlarni o\'chirmoqchimisiz? (Dataset saqlanadi)');" style="display: inline;">
                                     {% csrf_token %}
                                     <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
                                     <button type="submit" name="delete_assignments" class="btn btn-secondary" style="padding: 8px 16px;">
-                                        🗑️Delete
+                                        🗑️ Clear Data
                                     </button>
                                 </form>
                                 {% endif %}
                                 
-                                {% if not dataset.is_active %}
-                                <form method="post" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?');" style="display: inline;">
+                                <form method="post" onsubmit="return confirm('Datasetni butunlay o\'chirmoqchimisiz? (Barcha ma\'lumotlar yo\'qoladi!)');" style="display: inline;">
                                     {% csrf_token %}
                                     <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
                                     <button type="submit" name="delete_dataset" class="btn btn-danger" style="padding: 8px 16px;">
-                                        O'chirish
+                                        ❌ Delete Dataset
                                     </button>
                                 </form>
-                                {% endif %}
                             </div>
                         </td>
                     </tr>

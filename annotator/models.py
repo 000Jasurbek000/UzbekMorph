@@ -76,6 +76,7 @@ class Annotation(models.Model):
 
     dataset = models.ForeignKey(DatasetConfig, on_delete=models.CASCADE, related_name="annotations", null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="annotations")
+    assignment = models.ForeignKey(TokenAssignment, on_delete=models.CASCADE, related_name="annotations", null=True, blank=True)
     token_index = models.IntegerField(db_index=True)
     word = models.CharField(max_length=255)
     action = models.CharField(max_length=10, choices=ACTION_CHOICES)
