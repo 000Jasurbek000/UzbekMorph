@@ -14,7 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import Annotation, DatasetConfig, TokenAssignment, User
-from .segmenter import TAG_UZ
+from .segmenter import TAG_UZ, dotted_code_for_tag, normalize_tag
 from .services import (
     annotation_rows_for_export,
     generate_assignments,
@@ -31,6 +31,86 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = APP_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+ACTION_CSV_HEADERS = [
+    "ts",
+    "username",
+    "token_index",
+    "word",
+    "action",
+    "strategy",
+    "segments",
+    "tags",
+    "subtypes",
+    "codes",
+    "new_codes",
+    "comment",
+]
+
+
+def _derive_new_codes(tags: list[str]) -> list[str]:
+    return [dotted_code_for_tag(normalize_tag(tag)) for tag in (tags or [])]
+
+
+def _upgrade_action_csv_if_needed(csv_path: Path, jsonl_path: Path) -> None:
+    if not csv_path.exists() or csv_path.stat().st_size == 0:
+        return
+
+    with csv_path.open("r", encoding="utf-8", errors="ignore", newline="") as f:
+        reader = csv.reader(f)
+        existing_rows = list(reader)
+
+    if not existing_rows:
+        return
+
+    current_header = existing_rows[0]
+    if current_header == ACTION_CSV_HEADERS:
+        return
+
+    rebuilt_rows = [ACTION_CSV_HEADERS]
+    if jsonl_path.exists():
+        with jsonl_path.open("r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                payload = json.loads(line)
+                rebuilt_rows.append([
+                    payload.get("ts", ""),
+                    payload.get("username", ""),
+                    payload.get("token_index", ""),
+                    payload.get("word", ""),
+                    payload.get("action", ""),
+                    payload.get("strategy", ""),
+                    "|".join(payload.get("segments", [])),
+                    "|".join(payload.get("tags", [])),
+                    "|".join(payload.get("subtypes", [])),
+                    "|".join(payload.get("codes", [])),
+                    "|".join(payload.get("new_codes") or _derive_new_codes(payload.get("tags", []))),
+                    payload.get("comment", ""),
+                ])
+    else:
+        for row in existing_rows[1:]:
+            padded = list(row) + [""] * max(0, 12 - len(row))
+            tags = padded[7].split("|") if padded[7] else []
+            rebuilt_rows.append([
+                padded[0],
+                padded[1],
+                padded[2],
+                padded[3],
+                padded[4],
+                padded[5],
+                padded[6],
+                padded[7],
+                padded[8],
+                padded[9],
+                "|".join(_derive_new_codes(tags)),
+                padded[10] if len(padded) > 10 else "",
+            ])
+
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(rebuilt_rows)
+
 
 def _append_logs(dataset: DatasetConfig, payload: dict) -> None:
     base_name = f"dataset_{dataset.pk}"
@@ -40,22 +120,12 @@ def _append_logs(dataset: DatasetConfig, payload: dict) -> None:
     with jsonl_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
+    _upgrade_action_csv_if_needed(csv_path, jsonl_path)
     needs_header = not csv_path.exists() or csv_path.stat().st_size == 0
     with csv_path.open("a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         if needs_header:
-            writer.writerow([
-                "ts",
-                "username",
-                "token_index",
-                "word",
-                "action",
-                "strategy",
-                "segments",
-                "tags",
-                "subtypes",
-                "codes",
-            ])
+            writer.writerow(ACTION_CSV_HEADERS)
         writer.writerow([
             payload["ts"],
             payload["username"],
@@ -67,6 +137,8 @@ def _append_logs(dataset: DatasetConfig, payload: dict) -> None:
             "|".join(payload["tags"]),
             "|".join(payload["subtypes"]),
             "|".join(payload["codes"]),
+            "|".join(payload.get("new_codes", [])),
+            payload.get("comment", ""),
         ])
 
 
@@ -91,18 +163,26 @@ def _assignment_payload(user: User, dataset: DatasetConfig, position: int | None
 
     assignment = assignments[position]
     segmenter = get_segmenter(dataset)
+    analysis = segmenter.segment(assignment.word, strategy="primary")
     latest = Annotation.objects.filter(user=user, dataset=dataset, token_index=assignment.token_index).order_by("-created_at").first()
 
     existing = None
     if latest:
+        relabeled_existing = segmenter.relabel(latest.segments, latest.tags)
         existing = {
-            "segments": latest.segments,
-            "tags": latest.tags,
-            "subtypes": latest.subtypes,
-            "codes": latest.codes,
+            "segments": relabeled_existing["segments"],
+            "tags": relabeled_existing["tags"],
+            "subtypes": relabeled_existing["subtypes"],
+            "codes": relabeled_existing["codes"],
+            "new_codes": relabeled_existing["new_codes"],
             "action": latest.action,
             "strategy": latest.strategy,
         }
+
+        latest_is_auto_root = latest.strategy in {"primary", "alternate"} and (latest.tags == ["ROOT"] or len(latest.segments) <= 1)
+        analysis_is_richer = len(analysis.get("segments", [])) > len(latest.segments or [])
+        if latest_is_auto_root and analysis_is_richer:
+            existing = None
 
     completed = sum(1 for item in assignments if item.is_completed)
     return {
@@ -112,7 +192,7 @@ def _assignment_payload(user: User, dataset: DatasetConfig, position: int | None
         "total": len(assignments),
         "completed": completed,
         "word": assignment.word,
-        "analysis": segmenter.segment(assignment.word, strategy="primary"),
+        "analysis": analysis,
         "existing": existing,
         "assignment_mode": dataset.assignment_mode,
         "tag_uz": TAG_UZ,
@@ -272,6 +352,7 @@ def api_save(request):
     word = (data.get("word") or "").strip()
     action = (data.get("action") or "save").strip().lower()
     strategy = (data.get("strategy") or "primary").strip().lower()
+    comment = (data.get("comment") or "").strip()
     segments = data.get("segments") or []
     tags = data.get("tags") or []
 
@@ -318,6 +399,8 @@ def api_save(request):
         "tags": relabeled["tags"],
         "subtypes": relabeled["subtypes"],
         "codes": relabeled["codes"],
+        "new_codes": relabeled["new_codes"],
+        "comment": comment,
     }
     _append_logs(dataset, payload)
 
@@ -328,7 +411,7 @@ def _export_csv(rows: list[dict], filename: str) -> HttpResponse:
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     writer = csv.writer(response)
-    writer.writerow(["id", "username", "token_index", "word", "action", "strategy", "segments", "tags", "subtypes", "codes", "created_at"])
+    writer.writerow(["id", "username", "token_index", "word", "action", "strategy", "segments", "tags", "subtypes", "codes", "new_codes", "comment", "created_at"])
     for row in rows:
         writer.writerow([
             row["id"],
@@ -341,6 +424,8 @@ def _export_csv(rows: list[dict], filename: str) -> HttpResponse:
             "|".join(row["tags"]),
             "|".join(row["subtypes"]),
             "|".join(row["codes"]),
+            "|".join(row.get("new_codes", [])),
+            row.get("comment", ""),
             row["created_at"],
         ])
     return response

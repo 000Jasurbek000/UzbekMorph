@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 from .models import Annotation, DatasetConfig, TokenAssignment, User
-from .segmenter import UzbekMorphSegmenter
+from .segmenter import UzbekMorphSegmenter, dotted_code_for_tag, normalize_tag
 
 _SEGMENTER_CACHE: dict[tuple[int, str], UzbekMorphSegmenter] = {}
 
@@ -48,11 +48,9 @@ def get_active_dataset() -> DatasetConfig | None:
 
 
 def get_segmenter(dataset: DatasetConfig) -> UzbekMorphSegmenter:
-    cache_key = (dataset.pk, str(dataset.updated_at.timestamp()))
-    if cache_key not in _SEGMENTER_CACHE:
-        _SEGMENTER_CACHE.clear()
-        _SEGMENTER_CACHE[cache_key] = UzbekMorphSegmenter(Path(dataset.suffix_file.path))
-    return _SEGMENTER_CACHE[cache_key]
+    # Cache o'chirildi - har safar yangi instance yaratiladi
+    # Bu TSV o'zgarishlarini darhol ko'rish uchun
+    return UzbekMorphSegmenter(Path(dataset.suffix_file.path))
 
 
 def update_dataset_token_count(dataset: DatasetConfig) -> int:
@@ -128,6 +126,7 @@ def annotation_rows_for_export(queryset: Iterable[Annotation]) -> list[dict]:
                 "tags": ann.tags,
                 "subtypes": ann.subtypes,
                 "codes": ann.codes,
+                "new_codes": [dotted_code_for_tag(tag) for tag in (ann.tags or [])],
                 "created_at": ann.created_at.isoformat(timespec="seconds"),
             }
         )

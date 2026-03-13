@@ -1,11 +1,36 @@
 # Django Morfologik Annotatsiya Tizimi
 
-Morfologik annotatsiya qilish uchun Django asosida qurilgan web tizim.
+O'zbek tili uchun to'liq morfologik tahlil va annotatsiya tizimi. PREFIX, ROOT va barcha SUFFIX kategoriyalarini qo'llab-quvvatlaydi.
 
 ## Xususiyatlar
 
+### Morfologik tahlil imkoniyatlari
+- 🔤 **PREFIX** (Prefikslar): ba-, be-, no-, ser-, xush-, g'ayri-, ham-, alla-, hech-, har-
+- 🌿 **ROOT** (O'zak/Ildiz): So'zning asosiy qismi
+- 📊 **INFLECTION** (Ko'plik): -lar, -ler
+- 👤 **POSSESSIVE** (Egalik): -m, -ng, -si, -miz, -ngiz, -lari, -im, -ing, -imiz, -ingiz, -i
+- 📍 **CASE** (Kelishik): -ni, -ning, -ga, -ka, -qa, -da, -ta, -dan, -tan, -gacha, -dek, -day, -niki, -dagi, -tagi, -dagina
+- 🔨 **DERIVATIONAL** (Yasovchi): -chi, -lik, -kor, -gar, -li, -siz, -dor, -mand, va boshqalar (42 ta variant)
+- 💝 **DIMINUTIVE** (Kichraytirish): -cha, -choq, -chak, -kay, -gina, -kina, -qina, -jon, -oy, -bek, -boy
+- ⚡ **VERB** (Fe'l): -moq, -ish, -la, -lan, -lash, -lashtir, -tir, -dir, -ir, -ar
+
+### Misol tahlillar
+```
+maktablarimizdan → maktab + lar + imiz + dan
+                   ROOT + INFLECTION + POSSESSIVE + CASE
+
+tilshunoslik → til + shunos + lik
+              ROOT + DERIVATIONAL + DERIVATIONAL
+
+qizaloqlarimizga → qiz + aloq + lar + imiz + ga
+                  ROOT + DIMINUTIVE + INFLECTION + POSSESSIVE + CASE
+
+befarqlik → be + farq + lik
+           PREFIX + ROOT + DERIVATIONAL
+```
+
 ### Admin uchun
-- 📤 **Token va suffix fayllarini yuklash** (CSV/TSV format)
+- 📤 **TSV lexicon fayli yuklash** (103+ affix bilan)
 - 🔧 **Dataset yaratish va boshqarish**
 - 📊 **Barcha foydalanuvchilar statistikasi**
 - 👥 **Assignment rejimini tanlash** (Umumiy yoki Individual)
@@ -14,7 +39,7 @@ Morfologik annotatsiya qilish uchun Django asosida qurilgan web tizim.
 - 💾 **CSV va JSONL formatda eksport**
 
 ### Testlovchilar uchun
-- ✍️ **Token annotatsiya qilish**
+- ✍️ **To'liq morfologik annotatsiya**
 - 📋 **O'z tokenlarini ko'rish va tahrirlash**
 - 📈 **Shaxsiy statistika**
 - 🔄 **Jarayonni qaytadan boshlash**
@@ -25,6 +50,7 @@ Morfologik annotatsiya qilish uchun Django asosida qurilgan web tizim.
 - 🔐 **Xavfsiz autentifikatsiya**
 - 📱 **Responsive dizayn**
 - ⚡ **Tez va qulay interfeys**
+- 🔍 **Filtrlar** (Holat va Status bo'yicha)
 
 ## O'rnatish
 
@@ -85,19 +111,40 @@ Brauzerda `http://127.0.0.1:8001` manzilini oching.
 4. **Statistika**: Shaxsiy natijalar va eksport
 5. **Qaytadan boshlash**: Jarayonni boshidan boshlash
 
-## Token formati
+## Token va Lexicon formatlari
 
-Token fayli (CSV yoki TSV):
+### Token fayli (CSV yoki TSV):
 ```
+word
 kitob
 uylar
 bolalar
+maktablarimizdan
+tilshunoslik
 ```
 
-Suffix fayli (CSV yoki TSV):
+### Suffix Lexicon fayli (TSV - TAB bilan ajratilgan):
 ```
-lar
-ning
+affix	type	category	pos_from	pos_to	code	description
+ba	PREFIX	DERIVATIONAL	NOUN	ADJ	PX001	adjective forming prefix
+lar	SUFFIX	INFLECTION	NOUN	NOUN	SF001	plural
+im	SUFFIX	POSSESSIVE	NOUN	NOUN	SF016	first person singular alt
+ni	SUFFIX	CASE	NOUN	NOUN	SF030	accusative
+chi	SUFFIX	DERIVATIONAL	NOUN	NOUN	SF100	agent
+cha	SUFFIX	DIMINUTIVE	NOUN	NOUN	SF300	diminutive
+moq	SUFFIX	VERB	VERB	VERB	SF408	infinitive
+```
+
+**Ustunlar:**
+- `affix` - morfema (ba, lar, ni va h.k.)
+- `type` - PREFIX yoki SUFFIX
+- `category` - INFLECTION, POSSESSIVE, CASE, DERIVATIONAL, DIMINUTIVE, VERB
+- `pos_from` - boshlang'ich so'z turkumi
+- `pos_to` - oxirgi so'z turkumi  
+- `code` - kod (PXxxx yoki SFxxx)
+- `description` - tavsif
+
+To'liq lexicon fayli `suffix_lexicon.tsv` da (103 ta morfema)
 ga
 ```
 

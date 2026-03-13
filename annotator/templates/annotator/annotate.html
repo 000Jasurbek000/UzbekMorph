@@ -39,9 +39,41 @@
     gap: 15px;
     margin-bottom: 25px;
   }
+  .comment-box {
+    background: white;
+    border: 1px solid #E3F2FD;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 4px rgba(24, 144, 255, 0.05);
+  }
+  .comment-box label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #1890FF;
+  }
+  .comment-box textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    box-sizing: border-box;
+    padding: 13px 15px;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    font-size: 1em;
+    font-family: inherit;
+    color: #262626;
+    background: white;
+  }
+  .comment-box textarea:focus {
+    outline: none;
+    border-color: #1890FF;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  }
   .seg-row { 
     display: grid;
-    grid-template-columns: minmax(200px, 1.5fr) minmax(240px, 1fr) minmax(140px, 0.8fr) 50px;
+    grid-template-columns: minmax(200px, 1.5fr) minmax(240px, 1fr) minmax(130px, 0.7fr) minmax(130px, 0.7fr) 50px;
     gap: 12px;
     align-items: center;
     background: white;
@@ -91,6 +123,16 @@
     color: #1890FF;
     font-size: 1.05em;
   }
+  .new-code {
+    background: #f3e8ff;
+    border: 1px solid #d8b4fe;
+    padding: 13px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+    color: #7e22ce;
+    font-size: 1.05em;
+  }
   .add { 
     border: none;
     border-radius: 8px;
@@ -138,6 +180,36 @@
   .help-text strong {
     color: #D48806;
   }
+  .guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(212, 136, 6, 0.08);
+  }
+  .guide-table th,
+  .guide-table td {
+    border: 1px solid #f3e8b3;
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .guide-table th {
+    background: #fff3bf;
+    color: #92400e;
+    font-weight: 700;
+  }
+  .guide-table td {
+    color: #5b4a16;
+    line-height: 1.45;
+  }
+  .guide-table .mono {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.95em;
+    color: #7c2d12;
+  }
 </style>
 {% endblock %}
 {% block content %}
@@ -152,6 +224,11 @@
 
 <div class="rows" id="rows"></div>
 
+<div class="comment-box">
+  <label for="comment">📝 Izoh</label>
+  <textarea id="comment" placeholder="Bu token bo‘yicha izoh yoki eslatma yozing..."></textarea>
+</div>
+
 <div class="actions">
   <button class="btn green" onclick="saveAction('save')">💾 Saqlash</button>
   <button class="btn red" onclick="saveAction('delete')">🗑️ O'chirish</button>
@@ -163,45 +240,227 @@
 <div class="msg" id="msg"></div>
 
 <div class="help-text">
-  <strong>📋 Qo'llanma:</strong> Har bir qatorda so'z bo'lagi (segment), tegishli tag va kodini ko'rasiz. Yangi bo'lak qo'shish uchun <strong>+</strong> tugmasini bosing. Birinchi bo'lak doim o'zak hisoblanadi.
+  <strong>📋 Qo'llanma:</strong> So'zni morfologik bo'laklarga ajrating:
+  <br>• <strong>Prefiks</strong> - bosh qo'shimcha (ba-, be-, no-)
+  <br>• <strong>O'zak</strong> - so'zning asosiy qismi (ildiz)
+  <br>• <strong>Ko'plik</strong> - -lar, -ler
+  <br>• <strong>Egalik</strong> - -im, -ing, -si, -miz, -lari
+  <br>• <strong>Kelishik</strong> - -ni, -ga, -da, -dan, -ning
+  <br>• <strong>Yasovchi</strong> - -chi, -lik, -kor, -li, -siz; ko'pincha ot yoki sifat yasaydi
+  <br>• <strong>Kichraytirish</strong> - -cha, -choq, -gina, -jon
+  <br>• <strong>Fe'l</strong> - -moq, -ish, -la, -tir, -lash
+  <br>• <strong>Son</strong> - -ta, -tacha, -lab, -nchi; dona, tartib yoki taxmin son ma'nosi beradi
+  <br><strong>Misol:</strong> "maktablarimizdan" = maktab + lar + imiz + dan
+  <table class="guide-table">
+    <thead>
+      <tr>
+        <th>Kategoriya</th>
+        <th>Vazifasi</th>
+        <th>Ko'p uchraydigan shakllar</th>
+        <th>Izoh / natija</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>PREFIX</strong><br>Prefiks</td>
+        <td>So'z boshida kelib ma'noni o'zgartiradi</td>
+        <td class="mono">ba-, be-, no-, ser-</td>
+        <td>Masalan, inkor yoki belgi qo'shadi: <span class="mono">be + foyda</span></td>
+      </tr>
+      <tr>
+        <td><strong>ROOT</strong><br>O'zak</td>
+        <td>So'zning asosiy lug'aviy qismi</td>
+        <td class="mono">kitob, maktab, qaror</td>
+        <td>Har bir tahlilda kamida bitta o'zak bo'ladi</td>
+      </tr>
+      <tr>
+        <td><strong>INFLECTION</strong><br>Ko'plik</td>
+        <td>Otni ko'plik qiladi</td>
+        <td class="mono">-lar, -ler</td>
+        <td><span class="mono">bola + lar</span> → ko'plik</td>
+      </tr>
+      <tr>
+        <td><strong>POSSESSIVE</strong><br>Egalik</td>
+        <td>Narsa kimga tegishli ekanini bildiradi</td>
+        <td class="mono">-im, -ing, -i, -si, -miz, -lari</td>
+        <td><span class="mono">kitob + im</span>, <span class="mono">uy + i</span></td>
+      </tr>
+      <tr>
+        <td><strong>CASE</strong><br>Kelishik</td>
+        <td>So'zning gapdagi sintaktik vazifasini ko'rsatadi</td>
+        <td class="mono">-ni, -ning, -ga, -da, -dan</td>
+        <td>Tushum, qaratqich, jo'nalish, o'rin-payt, chiqish</td>
+      </tr>
+      <tr>
+        <td><strong>DERIVATIONAL</strong><br>Yasovchi</td>
+        <td>Yangi so'z yoki yangi turkum yasaydi</td>
+        <td class="mono">-chi, -lik, -kor, -li, -siz, -dor</td>
+        <td>Ko'pincha <strong>sifat</strong> yoki <strong>ot</strong> hosil qiladi: <span class="mono">tuz + siz</span>, <span class="mono">ish + chi</span></td>
+      </tr>
+      <tr>
+        <td><strong>ADJECTIVE</strong><br>Sifat</td>
+        <td>Sifat ma'nosi yasaydi yoki belgini bildiradi</td>
+        <td class="mono">-li, -siz, -dor, -mand, -simon</td>
+        <td><span class="mono">tuz + siz</span>, <span class="mono">ma'no + li</span>, <span class="mono">ilm + iy</span> kabi sifatlashgan shakllar</td>
+      </tr>
+      <tr>
+        <td><strong>DIMINUTIVE</strong><br>Kichraytirish</td>
+        <td>Erkalash, kichraytirish yoki yaqinlik ma'nosi beradi</td>
+        <td class="mono">-cha, -choq, -gina, -jon</td>
+        <td><span class="mono">qiz + cha</span>, <span class="mono">bola + jon</span></td>
+      </tr>
+      <tr>
+        <td><strong>VERB</strong><br>Fe'l</td>
+        <td>Harakat yoki fe'l shakli yasaydi</td>
+        <td class="mono">-la, -lan, -lash, -tir, -moq, -ish</td>
+        <td><span class="mono">toza + la</span>, <span class="mono">osh + ir + ish</span></td>
+      </tr>
+      <tr>
+        <td><strong>NUMERAL</strong><br>Son</td>
+        <td>Hisob, tartib, taqsim yoki taxmin son yasaydi</td>
+        <td class="mono">-ta, -tacha, -lab, -nchi, -tadan</td>
+        <td><span class="mono">uch + ta</span>, <span class="mono">bir + inchi</span>, <span class="mono">o'n + lab</span></td>
+      </tr>
+      <tr>
+        <td><strong>UNKNOWN</strong><br>Noma'lum</td>
+        <td>Kategoriya aniq bo'lmasa vaqtincha belgilanadi</td>
+        <td class="mono">?</td>
+        <td>Keyinroq tekshirib to'g'ri kategoriya bilan almashtiring</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 <script>
-const codeByTag = { STEM:'0.0.0', PLURAL:'1.1.1', POSSESSIVE:'2.2.2', CASE:'3.3.3', UNKNOWN:'9.9.9' };
+const codeByTag = {
+  PREFIX: 'PX000',
+  ROOT: 'ROOT',
+  INFLECTION: 'SF001',
+  POSSESSIVE: 'SF010',
+  CASE: 'SF030',
+  DERIVATIONAL: 'SF100',
+  ADJECTIVE: 'SF200',
+  DIMINUTIVE: 'SF300',
+  VERB: 'SF400',
+  NUMERAL: 'SF500',
+  UNKNOWN: 'UNKNOWN'
+};
+
+const newCodeByTag = {
+  PREFIX: '8.8.8.8',
+  ROOT: '0.0.0.0',
+  INFLECTION: '1.1.1.1',
+  POSSESSIVE: '2.2.2.2',
+  CASE: '3.3.3.3',
+  DERIVATIONAL: '4.4.4.4',
+  ADJECTIVE: '5.5.5.5',
+  DIMINUTIVE: '5.5.5.5',
+  VERB: '6.6.6.6',
+  NUMERAL: '7.7.7.7',
+  UNKNOWN: '9.9.9.9'
+};
+
 let currentPosition = 0;
 let currentTokenIndex = 0;
 let currentWord = '';
 let currentStrategy = 'primary';
 
-function rowTemplate(segment='', tag='STEM', code='0.0.0') {
+function rowTemplate(segment='', tag='ROOT', code='ROOT', newCode='0.0.0.0') {
   const div = document.createElement('div');
   div.className = 'seg-row';
   div.innerHTML = `
-    <input class="seg-input" type="text" value="${segment}" placeholder="Segment matni" />
+    <input class="seg-input" type="text" value="${segment}" placeholder="Morfema matni" />
     <select class="tag-select">
-      <option value="STEM">O'zak (Stem)</option>
-      <option value="PLURAL">Ko'plik (-lar/-ler)</option>
-      <option value="POSSESSIVE">Egalik (-im/-ing/-i/-si/-imiz/-ingiz/-lari)</option>
-      <option value="CASE">Kelishik (-ni/-ning/-ga/-da/-dan)</option>
-      <option value="UNKNOWN">Noma'lum</option>
+      <optgroup label="Asosiy">
+        <option value="PREFIX">🔤 Prefiks (ba-, be-, no-, ser-)</option>
+        <option value="ROOT">🌿 O'zak (Ildiz)</option>
+      </optgroup>
+      <optgroup label="Morfologik qo'shimchalar">
+        <option value="INFLECTION">📊 Ko'plik - otni ko'plik qiladi (-lar, -ler)</option>
+        <option value="POSSESSIVE">👤 Egalik - kimniki ekanini bildiradi (-im, -ing, -si, -miz, -lari)</option>
+        <option value="CASE">📍 Kelishik - gapdagi vazifani bildiradi (-ni, -ga, -da, -dan, -ning)</option>
+      </optgroup>
+      <optgroup label="Yasovchi qo'shimchalar">
+        <option value="DERIVATIONAL">🔨 Yasovchi - yangi ma'no/turkum yasaydi, ko'pincha sifat yoki ot (-chi, -lik, -kor, -li, -siz)</option>
+        <option value="ADJECTIVE">🟨 Sifat - belgi/xususiyat bildiruvchi shakl (-li, -siz, -dor, -mand)</option>
+        <option value="DIMINUTIVE">💝 Kichraytirish - erkalash/kichraytirish ma'nosi (-cha, -choq, -gina, -jon)</option>
+        <option value="VERB">⚡ Fe'l - harakat ma'nosi yoki fe'l yasaydi (-moq, -ish, -la, -tir, -lash)</option>
+        <option value="NUMERAL">🔢 Son - tartib, dona, taxmin son yasaydi (-ta, -tacha, -lab, -nchi)</option>
+      </optgroup>
+      <option value="UNKNOWN">❓ Noma'lum</option>
     </select>
     <div class="code">${code}</div>
+    <div class="new-code">${newCode}</div>
     <button class="add" type="button" title="Yangi qator qo'shish">+</button>`;
   const select = div.querySelector('.tag-select');
   const codeDiv = div.querySelector('.code');
-  select.value = tag || 'UNKNOWN';
-  select.addEventListener('change', () => { codeDiv.textContent = codeByTag[select.value] || '9.9.9'; });
+  const newCodeDiv = div.querySelector('.new-code');
+  select.value = tag || 'ROOT';
+  select.addEventListener('change', () => {
+    codeDiv.textContent = codeByTag[select.value] || 'UNKNOWN';
+    newCodeDiv.textContent = newCodeByTag[select.value] || '9.9.9.9';
+  });
   div.querySelector('.add').addEventListener('click', () => {
-    document.getElementById('rows').insertBefore(rowTemplate('', 'UNKNOWN', '9.9.9'), div.nextSibling);
+    document.getElementById('rows').insertBefore(rowTemplate('', 'ROOT', 'ROOT', '0.0.0.0'), div.nextSibling);
   });
   return div;
 }
 
-function renderRows(segments, tags, codes) {
+function renderRows(segments, tags, codes, newCodes=[]) {
   const rows = document.getElementById('rows');
   rows.innerHTML = '';
+  
+  // Eski tag nomlarini yangi nomlarga konvertatsiya
+  const tagMap = {
+    'STEM': 'ROOT',
+    'PLURAL': 'INFLECTION',
+    'INFLECTION': 'INFLECTION',
+    'POSSESSIVE': 'POSSESSIVE',
+    'CASE': 'CASE',
+    'DERIVATIONAL': 'DERIVATIONAL',
+    'ADJECTIVE': 'ADJECTIVE',
+    'ADJ': 'ADJECTIVE',
+    'DIMINUTIVE': 'DIMINUTIVE',
+    'VERB': 'VERB',
+    'NUMERAL': 'NUMERAL',
+    'PREFIX': 'PREFIX',
+    'ROOT': 'ROOT',
+    'UNKNOWN': 'UNKNOWN'
+  };
+  
+  // Eski kodlarni yangi kodlarga konvertatsiya
+  const codeMap = {
+    '0.0.0': 'ROOT',
+    '1.1.1': 'SF001',
+    '2.2.2': 'SF010',
+    '3.3.3': 'SF030',
+    '9.9.9': 'UNKNOWN',
+    'ROOT': 'ROOT',
+    'PX000': 'PX000',
+    'PX001': 'PX001',
+    'PX002': 'PX002',
+    'UNKNOWN': 'UNKNOWN'
+  };
+  const newCodeMap = {
+    '0.0.0': '0.0.0.0',
+    '1.1.1': '1.1.1.1',
+    '2.2.2': '2.2.2.2',
+    '3.3.3': '3.3.3.3',
+    '4.4.4': '4.4.4.4',
+    '5.5.5': '5.5.5.5',
+    '6.6.6': '6.6.6.6',
+    '7.7.7': '7.7.7.7',
+    '9.9.9': '9.9.9.9'
+  };
+  
   for (let i = 0; i < segments.length; i++) {
-    rows.appendChild(rowTemplate(segments[i] || '', tags[i] || 'UNKNOWN', codes[i] || '9.9.9'));
+    const originalTag = tags[i] || 'ROOT';
+    const convertedTag = tagMap[originalTag] || originalTag;
+    const originalCode = codes[i] || 'ROOT';
+    const convertedCode = codeMap[originalCode] || originalCode;
+    const originalNewCode = newCodes[i] || newCodeByTag[convertedTag] || '9.9.9.9';
+    const convertedNewCode = newCodeMap[originalNewCode] || originalNewCode;
+    rows.appendChild(rowTemplate(segments[i] || '', convertedTag, convertedCode, convertedNewCode));
   }
 }
 
@@ -216,7 +475,7 @@ function collectRows() {
     segments.push(seg);
     tags.push(tag);
   }
-  if (tags.length) tags[0] = 'STEM';
+  // Birinchi segment ROOT bo'lishi shart emas, foydalanuvchi o'zi tanlashi mumkin
   return { segments, tags };
 }
 
@@ -235,7 +494,8 @@ async function loadItem(position=null) {
   document.getElementById('meta').textContent = `📊 ${data.position + 1} / ${data.total} | ✅ Tugallangan: ${data.completed} | 🎯 Rejim: ${data.assignment_mode}`;
   document.getElementById('word').textContent = currentWord;
   const source = data.existing || data.analysis;
-  renderRows(source.segments, source.tags, source.codes);
+  renderRows(source.segments, source.tags, source.codes, source.new_codes || []);
+  document.getElementById('comment').value = '';
   const msgEl = document.getElementById('msg');
   msgEl.textContent = data.existing ? `ℹ️ Oldin saqlangan: ${data.existing.action}` : '';
   msgEl.style.background = data.existing ? '#dbeafe' : '#d1fae5';
@@ -248,7 +508,7 @@ async function reanalyze() {
   const res = await fetch('/api/reanalyze', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
   const data = await res.json();
   if (!data.ok) return;
-  renderRows(data.analysis.segments, data.analysis.tags, data.analysis.codes);
+  renderRows(data.analysis.segments, data.analysis.tags, data.analysis.codes, data.analysis.new_codes || []);
   currentStrategy = data.mode === 'alternate' ? 'alternate' : 'manual';
   const msgEl = document.getElementById('msg');
   msgEl.textContent = data.mode === 'alternate' ? '🔄 Alternativ tahlil qo\'llandi' : '✏️ Manual qayta belgilash qo\'llandi';
@@ -258,6 +518,7 @@ async function reanalyze() {
 
 async function saveAction(action) {
   const payload = collectRows();
+  const comment = document.getElementById('comment').value.trim();
   if (!payload.segments.length) {
     const msgEl = document.getElementById('msg');
     msgEl.textContent = '⚠️ Kamida bitta segment kerak!';
@@ -268,7 +529,7 @@ async function saveAction(action) {
   const res = await fetch('/api/save', {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ token_index: currentTokenIndex, word: currentWord, action, strategy: currentStrategy, segments: payload.segments, tags: payload.tags })
+    body: JSON.stringify({ token_index: currentTokenIndex, word: currentWord, action, strategy: currentStrategy, segments: payload.segments, tags: payload.tags, comment })
   });
   const data = await res.json();
   const msgEl = document.getElementById('msg');
